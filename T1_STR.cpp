@@ -1,5 +1,6 @@
 #include <iostream>
-#include <queue>
+#include <list>
+#include <vector>
 #include <cstdint>
 
 using namespace std;
@@ -26,12 +27,12 @@ class Simulacao{
     uint16_t Tempo;
     vector<Tarefa *> historico;
     vector<Tarefa *> tarefas;
-    queue<Tarefa *> *lista_prioridades[32];
+    list<Tarefa *> *lista_prioridades[32];
   public:
     //construtores
     Simulacao() : Tempo(0){
         for (auto& q : lista_prioridades)
-            q = new queue<Tarefa *>();
+            q = new list<Tarefa *>();
     }
     //metodos
     auto AdicionarTarefa(Tarefa*) -> void;
@@ -82,7 +83,7 @@ auto Simulacao::AdicionarTarefa(Tarefa* t) -> void{
 auto Simulacao::Passo() -> void{
     for(auto& t : tarefas){
         if(t->Chegada == Tempo)
-            lista_prioridades[t->Prioridade - 1]->push(t);
+            lista_prioridades[t->Prioridade - 1]->push_front(t);
     }
     Tempo++;
     for (auto &q : lista_prioridades){
@@ -92,11 +93,11 @@ auto Simulacao::Passo() -> void{
             historico.push_back(tarefa);
             if(tarefa->c_restante()){
                 if(tarefa->Politica == _Politica::RR){
-                    q->pop();
-                    q->push(tarefa);
+                    q->pop_front();
+                    q->push_back(tarefa);
                 }
             }else{
-                q->pop();
+                q->pop_front();
             }
             return;
         }
