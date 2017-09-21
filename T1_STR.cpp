@@ -13,8 +13,8 @@ struct Tarefa{
     uint16_t Computado;
     _Politica Politica;
     //construtores
-    Tarefa(char i, uint16_t p, uint16_t a, uint16_t c, _Politica o) : 
-        ID(i),Prioridade(p), Chegada(a), Computacao(c), Politica(o), Computado(0)
+    Tarefa(char i, uint16_t c, uint16_t a, uint16_t p, _Politica o) : 
+        ID(i),Computacao(c), Chegada(a), Prioridade(p), Politica(o), Computado(0)
     {}
     //metodos
     auto executar() -> void {Computado++;}
@@ -34,7 +34,7 @@ class Simulacao{
             q = new queue<Tarefa *>();
     }
     //metodos
-    auto AdicionarTarefa(Tarefa&) -> void;
+    auto AdicionarTarefa(Tarefa*) -> void;
     auto Passo() -> void;
     auto Ativa() -> bool;
     auto Imprimir() -> string;
@@ -42,6 +42,8 @@ class Simulacao{
     ~Simulacao(){
         for(auto& q : lista_prioridades)
             delete q;
+        for(auto& t : tarefas)
+            delete t;
     }
 };
 
@@ -56,8 +58,8 @@ auto main(void) -> int {
         do
         {
             uint16_t p, a, c, o;
-            cin >> p >> a >> c >> o;
-            auto tarefa = Tarefa((s - n) + 'A', p, a, c, 
+            cin >> c >> a >> p >> o;
+            auto tarefa = new Tarefa((s - n) + 'A', c, a, p, 
                 (o == 1) ? _Politica::FIFO : _Politica::RR);
             simulacao->AdicionarTarefa(tarefa);
         } while (--n > 0);
@@ -71,17 +73,19 @@ auto main(void) -> int {
     }
 }
 
-auto Simulacao::AdicionarTarefa(Tarefa& t) -> void{
-    if(t.Prioridade >= 1 && t.Prioridade <= 32){
-        tarefas.push_back(&t);
-        lista_prioridades[t.Prioridade - 1]->push(&t);
+auto Simulacao::AdicionarTarefa(Tarefa* t) -> void{
+    if(t->Prioridade >= 1 && t->Prioridade <= 32){
+        tarefas.push_back(t);
     }
 }
 
 auto Simulacao::Passo() -> void{
+    for(auto& t : tarefas){
+        if(t->Chegada == Tempo)
+            lista_prioridades[t->Prioridade - 1]->push(t);
+    }
     Tempo++;
-    for (auto& q : lista_prioridades)
-    {
+    for (auto &q : lista_prioridades){
         if(q->size()){
             auto tarefa = q->front();
             tarefa->executar();
@@ -101,7 +105,12 @@ auto Simulacao::Passo() -> void{
 }
 
 auto Simulacao::Ativa() -> bool{
-    for(auto& q : lista_prioridades)
+    if(Tempo > 2048)
+        return false;
+    for (auto &t : tarefas)
+        if(t->Chegada >= Tempo)
+            return true;
+    for (auto &q : lista_prioridades)
         if(q->size())
             return true;
     return false;
@@ -110,7 +119,7 @@ auto Simulacao::Ativa() -> bool{
 auto Simulacao::Imprimir() -> string{
     string str;
     str.reserve(Tempo);
-    for(auto t : historico)
+    for(auto& t : historico)
         str += ((t == nullptr) ? '.' : t->ID);
     return str;
 }
