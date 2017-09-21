@@ -1,5 +1,5 @@
 #include <iostream>
-#include <list>
+#include <queue>
 #include <vector>
 #include <cstdint>
 
@@ -27,12 +27,12 @@ class Simulacao{
     uint16_t Tempo;
     vector<Tarefa *> historico;
     vector<Tarefa *> tarefas;
-    list<Tarefa *> *lista_prioridades[32];
+    queue<Tarefa *> *lista_prioridades[32];
   public:
     //construtores
     Simulacao() : Tempo(0){
         for (auto& q : lista_prioridades)
-            q = new list<Tarefa *>();
+            q = new queue<Tarefa *>();
     }
     //metodos
     auto AdicionarTarefa(Tarefa*) -> void;
@@ -81,17 +81,17 @@ auto Simulacao::AdicionarTarefa(Tarefa* t) -> void{
 }
 
 auto Simulacao::Passo() -> void{
-    static list<Tarefa *> *RR_list_ptr = nullptr; 
+    static queue<Tarefa *> *RR_queue_ptr = nullptr; 
     for(auto& t : tarefas){
         if(t->Chegada == Tempo)
-            lista_prioridades[t->Prioridade - 1]->push_back(t);
+            lista_prioridades[t->Prioridade - 1]->push(t);
     }
     Tempo++;
-    if(RR_list_ptr != nullptr){
-        auto t = RR_list_ptr->front();
-        RR_list_ptr->pop_front();
-        RR_list_ptr->push_back(t);
-        RR_list_ptr = nullptr;
+    if(RR_queue_ptr != nullptr){
+        auto t = RR_queue_ptr->front();
+        RR_queue_ptr->pop();
+        RR_queue_ptr->push(t);
+        RR_queue_ptr = nullptr;
     }
     for (auto &q : lista_prioridades){
         if(q->size()){
@@ -100,9 +100,9 @@ auto Simulacao::Passo() -> void{
             historico.push_back(tarefa);
             if(tarefa->c_restante()){
                 if(tarefa->Politica == _Politica::RR)
-                    RR_list_ptr = q;
+                    RR_queue_ptr = q;
             }else{
-                q->pop_front();
+                q->pop();
             }
             return;
         }
