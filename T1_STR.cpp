@@ -7,7 +7,7 @@ using namespace std;
 
 enum class _Politica{FIFO,RR};
 
-struct Tarefa{
+struct Tarefa{//struct pq membros sao publicos por padrao
     //variaveis
     char ID;
     uint16_t Prioridade, Chegada, Computacao;
@@ -69,7 +69,7 @@ auto main(void) -> int {
     for(auto& s : simulacoes){
         while(s->Ativa())
             s->Passo();
-        cout << s->Imprimir() << endl;
+        cout << s->Imprimir() << "\n\n";
         delete s;
     }
 }
@@ -81,21 +81,26 @@ auto Simulacao::AdicionarTarefa(Tarefa* t) -> void{
 }
 
 auto Simulacao::Passo() -> void{
+    static list<Tarefa *> *RR_list_ptr = nullptr; 
     for(auto& t : tarefas){
         if(t->Chegada == Tempo)
-            lista_prioridades[t->Prioridade - 1]->push_front(t);
+            lista_prioridades[t->Prioridade - 1]->push_back(t);
     }
     Tempo++;
+    if(RR_list_ptr != nullptr){
+        auto t = RR_list_ptr->front();
+        RR_list_ptr->pop_front();
+        RR_list_ptr->push_back(t);
+        RR_list_ptr = nullptr;
+    }
     for (auto &q : lista_prioridades){
         if(q->size()){
             auto tarefa = q->front();
             tarefa->executar();
             historico.push_back(tarefa);
             if(tarefa->c_restante()){
-                if(tarefa->Politica == _Politica::RR){
-                    q->pop_front();
-                    q->push_back(tarefa);
-                }
+                if(tarefa->Politica == _Politica::RR)
+                    RR_list_ptr = q;
             }else{
                 q->pop_front();
             }
